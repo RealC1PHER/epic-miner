@@ -12,7 +12,7 @@ use core::util;
 use core::{ControlMessage, JobSharedData, JobSharedDataType, Solution, Stats};
 
 use bigint::uint::U256;
-use randomx::{calculate, RxState, RxAction};
+use randomx::{calculate, RxState};
 use util::LOGGER;
 
 const MAX_HASHS: u64 = 100;
@@ -144,13 +144,25 @@ impl RxMiner {
 				let mut result = EpochState::Loaded;
 				let mut rx = rx_state.write().unwrap();
 
-				if let Ok(RxAction::Changed) = rx.init_cache(&seed) {
-					if let Err(e) = rx.init_dataset(threads as u8) {
-						error!(LOGGER, "Tried to initialize a new dataset: {:?}", e);
-						result = EpochState::Failed(e.to_owned());
+				// The running dataset stays allocated while the next one is built, so the
+				// huge-page reservation (sized for one dataset) is usually too small for the
+				// second. Fall back to normal memory for this epoch instead of failing.
+				let large_pages = rx.large_pages;
+				let mut loaded = RxMiner::init_epoch(&mut rx, &seed, threads as u8);
+				if let Err(ref e) = loaded {
+					if large_pages {
+						warn!(
+							LOGGER,
+							"Next RandomX dataset does not fit in huge pages ({}), using normal memory", e
+						);
+						rx.large_pages = false;
+						loaded = RxMiner::init_epoch(&mut rx, &seed, threads as u8);
+						rx.large_pages = large_pages;
 					}
-				} else {
-					result = EpochState::Failed("Is not possible initialize a new dataset".to_owned());
+				}
+				if let Err(e) = loaded {
+					error!(LOGGER, "Tried to initialize a new dataset: {}", e);
+					result = EpochState::Failed(e);
 				}
 
 				let mut epochs = epochs.write().unwrap();
@@ -168,6 +180,13 @@ impl RxMiner {
 		Ok(())
 	}
 
+	fn init_epoch(rx: &mut RxState, seed: &[u8; 32], threads: u8) -> Result<(), String> {
+		// NotChanged: the cache for this seed is already in place (an earlier attempt got
+		// as far as the dataset), so only the dataset is left to build.
+		rx.init_cache(seed).map_err(|e| e.to_owned())?;
+		rx.init_dataset(threads).map_err(|e| e.to_owned())
+	}
+
 	fn swap_dataset(&mut self, height: u64) -> Result<(), &'static str> {
 		let mut epochs = self.epochs.write().unwrap();
 		let mut epoch = epochs
@@ -177,8 +196,12 @@ impl RxMiner {
 
 		if let Some(ref mut e) = epoch {
 			match e.state.clone() {
-				EpochState::Failed(e) => {
-					panic!(e);
+				EpochState::Failed(reason) => {
+					// Never panic here: this runs on the mining controller thread, and losing
+					// it leaves the stratum client with nowhere to send jobs. Retry instead.
+					error!(LOGGER, "RandomX dataset for height {} failed ({}), retrying", height, reason);
+					e.state = EpochState::Waiting;
+					return Ok(());
 				},
 				EpochState::Loaded => {},
 				_ => return Ok(()),
