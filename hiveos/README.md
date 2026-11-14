@@ -28,7 +28,7 @@ In the flight sheet, set **Miner** to **Custom**, then:
 
 | Key | Default | Meaning |
 |---|---|---|
-| `threads` | all CPU threads minus 2 | RandomX mining threads |
+| `threads` | all CPU threads | RandomX mining threads (set lower to leave cores free) |
 | `large_pages` | `true` | use huge pages for the RandomX dataset (h-run.sh reserves them) |
 | `tls` | from the URL prefix | force TLS on or off |
 

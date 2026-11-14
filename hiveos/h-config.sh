@@ -8,7 +8,7 @@
 #                       or ALIAS.%WORKER_NAME% for a pool.
 #   CUSTOM_PASS         stratum password (default "x"; pools use e.g. m=pool / m=solo)
 #   CUSTOM_USER_CONFIG  optional key=value pairs, one per line or separated by spaces or commas:
-#                         threads=N        RandomX threads (default: all CPU threads minus 2)
+#                         threads=N        RandomX threads (default: all CPU threads)
 #                         large_pages=true|false   (default true)
 #                         tls=true|false   (default from the URL prefix)
 
@@ -31,8 +31,7 @@ url="${url%%/*}"
 login="$CUSTOM_TEMPLATE"
 pass="${CUSTOM_PASS:-x}"
 
-threads=$(( $(nproc) - 2 ))
-(( threads < 1 )) && threads=1
+threads=$(nproc)
 large_pages=true
 
 for kv in ${CUSTOM_USER_CONFIG//,/ }; do
