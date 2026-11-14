@@ -16,8 +16,9 @@ if [[ -f "$log" ]]; then
   hps=${hps:-0}
   acc=$(grep -c 'Share Accepted!!' "$log")
   rej=$(grep -c 'Failed to submit a solution' "$log")
-  uptime=$(ps -o etimes= -C epic-miner 2>/dev/null | head -n 1 | tr -d ' ')
-  uptime=${uptime:-0}
+  pid=$(pgrep -o -x epic-miner)
+  uptime=0
+  [[ -n "$pid" ]] && uptime=$(( $(date +%s) - $(stat -c %Y "/proc/$pid") ))
   khs=$(awk -v h="$hps" 'BEGIN { printf "%.3f", h / 1000 }')
   cpu_t=$(cpu-temp 2>/dev/null)
   temp=$([[ "$cpu_t" =~ ^[0-9]+$ ]] && echo "[$cpu_t]" || echo "[]")

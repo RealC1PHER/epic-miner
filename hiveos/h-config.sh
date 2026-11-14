@@ -7,7 +7,7 @@
 #   CUSTOM_TEMPLATE     stratum login, e.g. %WAL%#%WORKER_NAME% for an Epic node,
 #                       or ALIAS.%WORKER_NAME% for a pool.
 #   CUSTOM_PASS         stratum password (default "x"; pools use e.g. m=pool / m=solo)
-#   CUSTOM_USER_CONFIG  optional key=value lines (or space separated):
+#   CUSTOM_USER_CONFIG  optional key=value pairs, one per line or separated by spaces or commas:
 #                         threads=N        RandomX threads (default: all CPU threads minus 2)
 #                         large_pages=true|false   (default true)
 #                         tls=true|false   (default from the URL prefix)
@@ -32,7 +32,7 @@ threads=$(( $(nproc) - 2 ))
 (( threads < 1 )) && threads=1
 large_pages=true
 
-for kv in $CUSTOM_USER_CONFIG; do
+for kv in ${CUSTOM_USER_CONFIG//,/ }; do
   key="${kv%%=*}"; val="${kv#*=}"
   case "$key" in
     threads)     [[ "$val" =~ ^[0-9]+$ ]] && threads="$val" ;;

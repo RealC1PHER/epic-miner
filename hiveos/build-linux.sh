@@ -16,10 +16,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
-export RUSTFLAGS="${RUSTFLAGS:-} -C link-args=-Wl,-rpath,\$ORIGIN"
+# --cap-lints warn: the 2019-era crates use #![deny(...)] lints that newer rustc versions
+# trip over (e.g. unused_mut); report them as warnings instead of failing the build.
+export RUSTFLAGS="${RUSTFLAGS:-} --cap-lints warn -C link-args=-Wl,-rpath,\$ORIGIN"
 cargo build --release --bin epic-miner
 
-LIB="$(find target/release/build -path '*randomx-*/out/build/librandomx.so' | head -1)"
+# newest copy: older cargo puts it in build/randomx-<hash>/, newer in build/randomx/<hash>/
+LIB="$(find target/release/build -path '*/out/build/librandomx.so' -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)"
 [ -n "$LIB" ] || { echo "librandomx.so not found in target/release/build"; exit 1; }
 cp -f "$LIB" target/release/librandomx.so
 
