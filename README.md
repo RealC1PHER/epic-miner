@@ -1,5 +1,7 @@
 # Epic Miner
 
+> **HiveOS build:** this fork (branch `frenziez/hiveos-build`) adds a Linux build that runs on current HiveOS and a HiveOS custom-miner package. See [hiveos/README.md](hiveos/README.md) and the [releases](https://github.com/RealC1PHER/epic-miner/releases). Mining code and stratum protocol are unchanged.
+
 A standalone mining implementation intended for mining epic against a running Epic node.
 
 ## Supported Platforms
@@ -103,3 +105,14 @@ After you have your epic server running (with the stratum server enabled) and a 
 Epic-miner can be further configured via the `epic-miner.toml` file.
 This file contains inline documentation on all configuration
 options, and should be the first point of reference. Also, you can see Topic [Configuring your epic-miner](https://gitlab.com/epiccash/epic/blob/master/doc/running.org#config_miner) in the testnet documentation for further information.
+
+## Support this work
+
+This HiveOS build of epic-miner is maintained in spare time by a small solo miner: building, testing on mainnet, and keeping it running on current HiveOS. If it helped you and you'd like to support it, a donation is welcome, but never expected.
+
+| Coin | Address |
+|---|---|
+| **Epic Cash (EPIC)** | `esYeazToEW75rLTQPcY7fipqP6yYv3b8LZdqxrjyHLB7KvNfUqCJ@epicbox.epiccash.com` |
+| **Bitcoin (BTC)** | `bc1qkjekqtj5j9gxcm98prqugmqeqpnyzp3psc3z03uxrsk3gqvtvdcq7nl24q` |
+
+Thank you!
