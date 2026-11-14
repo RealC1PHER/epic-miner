@@ -13,6 +13,9 @@
 #                         tls=true|false   (default from the URL prefix)
 
 [[ -z $CUSTOM_CONFIG_FILENAME ]] && . /hive/miners/custom/epic-miner/h-manifest.conf 2>/dev/null
+# HiveOS does not export the flight-sheet values into h-run.sh's environment; read them
+# from Hive's own wallet.conf when they are missing (otherwise the URL/login end up empty).
+[[ -z $CUSTOM_URL && -f /hive-config/wallet.conf ]] && . /hive-config/wallet.conf
 
 conf="$CUSTOM_CONFIG_FILENAME"
 mkdir -p "$(dirname "$conf")" "$(dirname "$CUSTOM_LOG_BASENAME")"
