@@ -17,6 +17,8 @@ default = ["cpu"]
 opencl = ["ocl_cuckatoo", "progpow_miner_opencl", "progpow_opencl"]
 cuda = ["progpow_miner_cuda", "progpow_cuda", "cuckoo_miner_cuda"]
 cpu = ["cuckoo_miner"]
+# The TUI code is gated on this feature; without it cursive/ncurses is not linked (headless, e.g. HiveOS).
+tui = ["cursive", "pancurses"]
 
 
 [[bin]]
@@ -47,12 +49,13 @@ randomx = { path = "./randomx-rust", version = "0.1.0" }
 randomx_miner = { path = "./randomx-miner", version = "0.1.0" }
 
 [target.'cfg(windows)'.dependencies]
-cursive = { version = "0.14", default-features = false, features = ["pancurses-backend"] }
+cursive = { version = "0.14", default-features = false, features = ["pancurses-backend"], optional = true }
 [target.'cfg(windows)'.dependencies.pancurses]
 version = "0.16.0"
 features = ["win32"]
+optional = true
 [target.'cfg(unix)'.dependencies]
-cursive = "0.12"
+cursive = { version = "0.12", optional = true }
 
 [[test]]
 name = "cucumber"
