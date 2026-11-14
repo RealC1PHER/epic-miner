@@ -1,0 +1,2 @@
+hiveos/*.sh text eol=lf
+hiveos/*.conf text eol=lf
