@@ -195,6 +195,16 @@ impl Controller {
 			LOGGER,
 			"Mining: {:?} at {} hps (hashes per second)", algo, hashes_per_sec
 		);
+		info!(
+			LOGGER,
+			"Mining: {:?} per thread hps: {}",
+			algo,
+			stats
+				.iter()
+				.map(|s| s.hashes_per_sec.to_string())
+				.collect::<Vec<_>>()
+				.join(" ")
+		);
 
 		let mut s_stats = self.stats.write().unwrap();
 		s_stats.mining_stats.add_combined_gps(hashes_per_sec as f64);

@@ -56,7 +56,9 @@ resumes on its own when RandomX comes back. That is expected.
 epic-miner has no API. `h-stats.sh` reads its log
 (`/var/log/miner/epic-miner/epic-miner.log`): hashrate from `Mining: RandomX at N hps`,
 accepted shares from `Share Accepted!!`, rejected from `Failed to submit a solution`
-(stale "too late" submits count as rejected).
+(stale "too late" submits count as rejected). Since fz7 the miner also logs
+`Mining: RandomX per thread hps: …`, so HiveOS shows one hashrate box per mining thread
+(each with the CPU temperature, since the CPU reports one temperature).
 
 ## Building the package
 
