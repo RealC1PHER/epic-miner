@@ -75,7 +75,8 @@ fn main() {
 	let dst = Config::new("src/cuckoo_sys/plugins")
 	                      .define("BUILD_CUDA_PLUGINS",BUILD_CUDA_PLUGINS) //whatever flags go here
 	                      //.cflag("-foo") //and here
-	                      .build_target("")
+	                      // MSVC: CMake rejects an empty --target for the Visual Studio generator.
+	                      .build_target(if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") { "ALL_BUILD" } else { "" })
 	                      .build();
 
 	println!("Plugin path: {:?}", plugin_path);
