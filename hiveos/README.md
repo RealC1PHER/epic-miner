@@ -31,6 +31,19 @@ In the flight sheet, set **Miner** to **Custom**, then:
 | `threads` | all CPU threads | RandomX mining threads (set lower to leave cores free) |
 | `large_pages` | `true` | use huge pages for the RandomX dataset (h-run.sh reserves them) |
 | `tls` | from the URL prefix | force TLS on or off |
+| `msr` | `true` | apply the RandomX MSR tweak before the miner starts (see below) |
+
+### MSR tweak
+
+`h-run.sh` writes the RandomX MSR presets that XMRig and SRBMiner also use (cache prefetcher
+settings, same values as XMRig): Zen 4, Zen 3, Zen 1/2 and Intel. On bare metal this gives
+several percent more RandomX hashrate. The values stay until the next reboot, also after
+`msr=false`.
+
+It never blocks mining. In a VM, on an unknown CPU or when a write fails, it logs one
+`MSR tweak skipped: …` line and the miner starts as normal. The result is in
+`/var/log/miner/epic-miner/msr.log` and the miner screen, e.g.
+`MSR tweak applied (zen4) on 32 CPUs: 0xc0011020=0x0004400000000000 …`.
 
 ## Behaviour
 

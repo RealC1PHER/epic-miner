@@ -11,6 +11,7 @@
 #                         threads=N        RandomX threads (default: all CPU threads)
 #                         large_pages=true|false   (default true)
 #                         tls=true|false   (default from the URL prefix)
+#                         msr=true|false   RandomX MSR tweak in h-run.sh (default true)
 
 [[ -z $CUSTOM_CONFIG_FILENAME ]] && . /hive/miners/custom/epic-miner/h-manifest.conf 2>/dev/null
 # HiveOS does not export the flight-sheet values into h-run.sh's environment; read them
@@ -33,6 +34,7 @@ pass="${CUSTOM_PASS:-x}"
 
 threads=$(nproc)
 large_pages=true
+msr=true
 
 for kv in ${CUSTOM_USER_CONFIG//,/ }; do
   key="${kv%%=*}"; val="${kv#*=}"
@@ -40,6 +42,7 @@ for kv in ${CUSTOM_USER_CONFIG//,/ }; do
     threads)     [[ "$val" =~ ^[0-9]+$ ]] && threads="$val" ;;
     large_pages) [[ "$val" == true || "$val" == false ]] && large_pages="$val" ;;
     tls)         [[ "$val" == true || "$val" == false ]] && tls="$val" ;;
+    msr)         [[ "$val" == true || "$val" == false ]] && msr="$val" ;;
   esac
 done
 
@@ -79,4 +82,4 @@ plugin_name = "cuckatoo_lean_cpu_compat_19"
 nthreads = 1
 EOF
 
-echo "[h-config] url=$url tls=$tls threads=$threads large_pages=$large_pages login=${login:0:6}..."
+echo "[h-config] url=$url tls=$tls threads=$threads large_pages=$large_pages msr=$msr login=${login:0:6}..."
