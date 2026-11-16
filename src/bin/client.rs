@@ -391,6 +391,18 @@ impl Controller {
 
 			diff
 		};
+		// The node sometimes pushes a stale template (built on a parent that was overtaken
+		// mid-build) with every difficulty at 0. Mining it turns every hash batch into a
+		// "share" and floods the node with rejected submits, so pause until the next real job.
+		if difficulty == 0 {
+			warn!(
+				LOGGER,
+				"Ignoring job at height {} (job_id {}): share difficulty is 0, pausing until the next job",
+				job.height,
+				job.job_id
+			);
+			return self.send_miner_stop();
+		}
 		let algo_needed = match job.algorithm.as_str() {
 			"cuckoo" => "Cuckatoo".to_string(),
 			"randomx" => "RandomX".to_string(),

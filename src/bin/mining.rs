@@ -70,6 +70,8 @@ impl Controller {
 	{
 		// how often to output stats
 		let stat_output_interval = 2;
+		// set by StopJob; notify() only resumes on a height change, so resume explicitly
+		let mut stopped = false;
 		let mut next_stat_output = time::get_time().sec + stat_output_interval;
 
 		loop {
@@ -80,13 +82,18 @@ impl Controller {
 						self.current_height = height;
 						self.current_job_id = job_id;
 						self.current_target_diff = diff;
-						miner.notify(
+						let r = miner.notify(
 							self.current_job_id as u32,
 							self.current_height,
 							&pre_pow,
 							"",
 							diff,
-						)
+						);
+						if stopped {
+							miner.resume_solvers();
+							stopped = false;
+						}
+						r
 					}
 					types::MinerMessage::ReceivedSeed(epochs) => {
 						for (start_height, end_height, seed) in epochs {
@@ -97,6 +104,7 @@ impl Controller {
 					types::MinerMessage::StopJob => {
 						debug!(LOGGER, "Stopping jobs");
 						miner.pause_solvers();
+						stopped = true;
 						Ok(())
 					}
 					types::MinerMessage::Shutdown => {
