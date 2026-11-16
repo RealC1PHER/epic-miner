@@ -173,6 +173,8 @@ pub struct Controller {
 	miner_tx: mpsc::Sender<types::MinerMessage>,
 	last_request_id: u32,
 	stats: Arc<RwLock<stats::Stats>>,
+	/// algorithm of the node's current turn while it is not ours (miner paused), for quiet logging
+	other_algo: Option<String>,
 }
 
 fn invlalid_error_response() -> types::RpcError {
@@ -205,6 +207,7 @@ impl Controller {
 			rx: rx,
 			miner_tx: miner_tx,
 			last_request_id: 0,
+			other_algo: None,
 			stats: stats,
 		})
 	}
@@ -433,6 +436,32 @@ impl Controller {
 		self.miner_tx.send(miner_message).map_err(|e| e.into())
 	}
 
+	/// Jobs for another algorithm only pause the miner. They are logged once when the node's
+	/// turn moves away from our algorithm and once when it comes back, not on every job.
+	fn handle_job(&mut self, job: types::JobTemplate) -> Result<(), Error> {
+		let my_algo = self.parse_algorithm();
+		if job.algorithm == my_algo {
+			if let Some(other) = self.other_algo.take() {
+				info!(LOGGER, "{} turn is over, back to {} at height {}", other, my_algo, job.height);
+			}
+			info!(LOGGER, "Got a new job: {:?}", job);
+			self.send_miner_job(job)
+		} else {
+			debug!(LOGGER, "Got a new job: {:?}", job);
+			if self.other_algo.as_ref() != Some(&job.algorithm) {
+				info!(
+					LOGGER,
+					"Node is on {} at height {}: {} paused until its turn (quiet until then)",
+					job.algorithm,
+					job.height,
+					my_algo
+				);
+				self.other_algo = Some(job.algorithm.clone());
+			}
+			self.send_miner_stop()
+		}
+	}
+
 	pub fn handle_request(&mut self, req: types::RpcRequest) -> Result<(), Error> {
 		debug!(LOGGER, "Received request type: {}", req.method);
 		match req.method.as_str() {
@@ -440,26 +469,7 @@ impl Controller {
 				None => Err(Error::RequestError("No params in job request".to_owned())),
 				Some(params) => {
 					let job = serde_json::from_value::<types::JobTemplate>(params)?;
-					info!(LOGGER, "Got a new job: {:?}", job);
-
-					let algo_needed = match job.algorithm.as_str() {
-						"cuckoo" => "cuckoo".to_string(),
-						"randomx" => "randomx".to_string(),
-						"progpow" => "progpow".to_string(),
-						_ => "".to_string(),
-					};
-
-					if self.parse_algorithm() == algo_needed {
-						self.send_miner_job(job)
-					} else {
-						info!(
-							LOGGER,
-							"my algo: {}, algo from job {}",
-							self.parse_algorithm(),
-							algo_needed
-						);
-						self.send_miner_stop()
-					}
+					self.handle_job(job)
 				}
 			},
 			_ => Err(Error::RequestError("Unknonw method".to_owned())),
@@ -510,29 +520,11 @@ impl Controller {
 							job.height, job_diff
 						);
 					}
-					info!(
+					debug!(
 						LOGGER,
 						"Got a job at height {} and share difficulty {:?}", job.height, job_diff
 					);
-
-					let algo_needed = match job.algorithm.as_str() {
-						"cuckoo" => "cuckoo".to_string(),
-						"randomx" => "randomx".to_string(),
-						"progpow" => "progpow".to_string(),
-						_ => "".to_string(),
-					};
-
-					if self.parse_algorithm() == algo_needed {
-						self.send_miner_job(job)
-					} else {
-						info!(
-							LOGGER,
-							"my algo: {}, algo from job {}",
-							self.parse_algorithm(),
-							algo_needed
-						);
-						self.send_miner_stop()
-					}
+					self.handle_job(job)
 				} else {
 					let err = res.error.unwrap_or_else(|| invlalid_error_response());
 					let mut stats = self.stats.write()?;

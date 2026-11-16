@@ -72,6 +72,7 @@ impl Controller {
 		let stat_output_interval = 2;
 		// set by StopJob; notify() only resumes on a height change, so resume explicitly
 		let mut stopped = false;
+		let mut stats_muted = false;
 		let mut next_stat_output = time::get_time().sec + stat_output_interval;
 
 		loop {
@@ -120,7 +121,16 @@ impl Controller {
 			}
 
 			if time::get_time().sec > next_stat_output {
-				self.output_job_stats(miner.get_stats().unwrap());
+				// while paused for another algorithm's turn, log one 0 H/s line (the HiveOS stats
+				// script shows the last one) and then stay quiet until the next job
+				if !stopped || !stats_muted {
+					let stats = miner.get_stats().unwrap();
+					stats_muted = stopped && stats.iter().all(|s| s.hashes_per_sec == 0);
+					self.output_job_stats(stats);
+				}
+				if !stopped {
+					stats_muted = false;
+				}
 				next_stat_output = time::get_time().sec + stat_output_interval;
 			}
 
